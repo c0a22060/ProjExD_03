@@ -9,6 +9,7 @@ WIDTH = 1600  # ゲームウィンドウの幅
 HEIGHT = 900  # ゲームウィンドウの高さ
 NUM_OF_BOMBS = 5
 
+
 def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     """
     オブジェクトが画面内or画面外を判定し，真理値タプルを返す関数
@@ -144,6 +145,30 @@ class Beam:
         screen.blit(self.img, self.rct)
 
 
+class Explosion:
+    def __init__(self, obj:Bomb):
+        """
+        爆発画像Surfaceを生成する
+        引数1 beam：ビームの座標を取得
+        爆発のリストを作り表示する
+        """
+        img0 =pg.transform.rotozoom(pg.image.load(f"ex03/fig/explosion.gif"), 0, 1.0)
+        img1 = pg.transform.flip(img0, True, False)
+        self.img_list = [img0, pg.transform.flip(img0, True, True)]
+        self.img = self.img_list[0]
+        self.rct = self.img.get_rect()
+        self.rct.center = obj.rct.center
+        self.life = 50
+    
+    def update(self, screen: pg.Surface):
+        """
+        爆発経過時間に応じて画像をカエル
+        """
+        self.life -= 1
+        screen.blit(self.img_list[self.life%2], self.rct)
+
+
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -151,6 +176,7 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
     beam = None
+    explosions = []
 
     clock = pg.time.Clock()
     tmr = 0
@@ -173,15 +199,20 @@ def main():
         for i, bomb in enumerate(bombs):
             if beam is not None:
                 if bomb.rct.colliderect(beam.rct):
+                    explosions.append(Explosion(bombs[i]))
                     bombs[i] = None
                     beam = None
+                   
                     bird.change_img(6, screen)
                     pg.display.update()
-                
+
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         
         bombs = [bomb for bomb in bombs if bomb is not None]
+        explosions = [explosion for explosion in explosions if explosion.life >=0]
+        for explosion in explosions:
+            explosion.update(screen)
         for bomb in bombs:
             bomb.update(screen)
         if beam != None:
