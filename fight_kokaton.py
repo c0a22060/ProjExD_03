@@ -48,6 +48,20 @@ class Bird:
             True, 
             False
         )
+        img0 = pg.transform.rotozoom(pg.image.load(f"ex03/fig/{num}.png"), 0, 2.0)  # 左向き
+        img = pg.transform.flip(img0, True, False)  # 右向き
+        self.imgs = {
+            (+5, 0): img,  # 右
+            (+5, -5): pg.transform.rotozoom(img, 45, 1.0),  # 右上
+            (0, -5): pg.transform.rotozoom(img, 90, 1.0),  # 上
+            (-5, -5): pg.transform.rotozoom(img0, -45, 1.0),  # 左上
+            (-5, 0): img0,  # 左
+            (-5, +5): pg.transform.rotozoom(img0, 45, 1.0),  # 左下
+            (0, +5): pg.transform.rotozoom(img, -90, 1.0),  # 下
+            (+5, +5): pg.transform.rotozoom(img, -45, 1.0),  # 右下
+        }
+        self.img = self.imgs[(+5, 0)]  # デフォルト：右向き
+
         self.rct = self.img.get_rect()
         self.rct.center = xy
 
@@ -74,6 +88,8 @@ class Bird:
         self.rct.move_ip(sum_mv)
         if check_bound(self.rct) != (True, True):
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
+        if not (sum_mv[0] == 0 and sum_mv[1] == 0):  # 何かしらの矢印キーが押されていたら
+            self.img = self.imgs[tuple(sum_mv)] 
         screen.blit(self.img, self.rct)
 
 
@@ -113,9 +129,9 @@ class Beam:
     効果こうかとんが放つビームに関するクラス
     """
     def __init__(self, bird:Bird):
-        self.img = pg.image.load(f"ex03/fig/beam.png")
+        self.img = self.img = pg.transform.rotozoom(pg.image.load(f"ex03/fig/beam.png"), 0, 2.0)
         self.rct = self.img.get_rect()
-        self.rct.centerx = bird.rct.centerx+50
+        self.rct.left = bird.rct.right
         self.rct.centery = bird.rct.centery
         self.vx, self.vy = +5, 0
 
@@ -147,12 +163,6 @@ def main():
         
         screen.blit(bg_img, [0, 0])
         
-        # if bird.rct.colliderect(bomb.rct):
-        #     # ゲームオーバー時に，こうかとん画像を切り替え，1秒間表示させる
-        #     bird.change_img(8, screen)
-        #     pg.display.update()
-        #     time.sleep(1)
-        #     return
         if bomb is not None:
             if bird.rct.colliderect(bomb.rct):
                 bird.change_img(8, screen)
@@ -161,13 +171,14 @@ def main():
                 return
         if bomb is not None and beam is not None:
             if bomb.rct.colliderect(beam.rct):
+                """
+                ビームが当たったらこうかとんがよろこぶ
+                """
                 bomb = None
                 beam = None
-            else:
                 bird.change_img(6, screen)
                 pg.display.update()
-                time.sleep(1)
-                return
+                
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         if bomb != None:
